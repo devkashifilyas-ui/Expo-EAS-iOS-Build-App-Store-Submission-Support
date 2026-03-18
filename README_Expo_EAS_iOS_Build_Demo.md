@@ -120,9 +120,3 @@ The demo represents workflows involving:
 - Provisioning Profiles
 - App Store Connect
 - TestFlight Distribution
-
----
-
-## Author
-
-Created as a demo project to showcase the Expo → EAS → App Store deployment workflow.
