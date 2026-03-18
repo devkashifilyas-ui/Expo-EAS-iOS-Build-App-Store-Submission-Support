@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EAS Build & App Store Submission Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --surface: #111318;
+    --surface2: #181c23;
+    --border: #1e2330;
+    --border2: #252c3a;
+    --accent: #3b82f6;
+    --accent2: #60a5fa;
+    --green: #22c55e;
+    --yellow: #f59e0b;
+    --red: #ef4444;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --muted2: #94a3b8;
+    --apple: #a855f7;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(59,130,246,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59,130,246,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .shell {
+    position: relative;
+    z-index: 1;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 32px 20px 60px;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 40px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .header-icon {
+    width: 44px; height: 44px;
+    background: linear-gradient(135deg, var(--accent), var(--apple));
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .header h1 {
+    font-size: 20px; font-weight: 800;
+    letter-spacing: -0.3px;
+  }
+  .header p {
+    font-size: 13px; color: var(--muted2);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .header-badge {
+    margin-left: auto;
+    background: rgba(34,197,94,0.12);
+    border: 1px solid rgba(34,197,94,0.3);
+    color: var(--green);
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    padding: 4px 10px; border-radius: 20px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .dot-live {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--green);
+    animation: pulse 1.5s infinite;
+  }
+
+  /* Progress Steps */
+  .progress-nav {
+    display: flex;
+    align-items: center;
+    margin-bottom: 32px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    gap: 0;
+  }
+  .step-item {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .step-circle {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+    border: 2px solid var(--border2);
+    background: var(--surface);
+    color: var(--muted);
+    transition: all 0.3s;
+    position: relative;
+  }
+  .step-circle.done {
+    background: rgba(34,197,94,0.15);
+    border-color: var(--green);
+    color: var(--green);
+  }
+  .step-circle.active {
+    background: rgba(59,130,246,0.15);
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 16px rgba(59,130,246,0.3);
+  }
+  .step-label {
+    font-size: 11px;
+    color: var(--muted);
+    margin: 0 8px;
+    white-space: nowrap;
+    font-family: 'JetBrains Mono', monospace;
+    transition: color 0.3s;
+  }
+  .step-label.active { color: var(--accent2); }
+  .step-label.done { color: var(--green); }
+  .step-connector {
+    width: 28px; height: 1px;
+    background: var(--border2);
+    flex-shrink: 0;
+    transition: background 0.3s;
+  }
+  .step-connector.done { background: var(--green); }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    display: none;
+    animation: slideIn 0.35s ease;
+  }
+  .card.active { display: block; }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .card-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .card-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .card-title { font-size: 15px; font-weight: 700; }
+  .card-sub { font-size: 12px; color: var(--muted2); font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
+
+  .card-body { padding: 24px; }
+
+  /* Checklist */
+  .checklist { display: flex; flex-direction: column; gap: 10px; }
+  .check-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    transition: border-color 0.3s;
+  }
+  .check-row:hover { border-color: var(--border2); }
+  .check-icon {
+    width: 28px; height: 28px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; flex-shrink: 0;
+  }
+  .ok { background: rgba(34,197,94,0.12); color: var(--green); }
+  .warn { background: rgba(245,158,11,0.12); color: var(--yellow); }
+  .err { background: rgba(239,68,68,0.12); color: var(--red); }
+  .check-info { flex: 1; }
+  .check-label { font-size: 13px; font-weight: 600; }
+  .check-detail { font-size: 11px; color: var(--muted2); font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
+  .badge {
+    font-size: 10px; font-family: 'JetBrains Mono', monospace;
+    padding: 3px 8px; border-radius: 20px; font-weight: 600;
+  }
+  .badge-ok { background: rgba(34,197,94,0.12); color: var(--green); border: 1px solid rgba(34,197,94,0.25); }
+  .badge-warn { background: rgba(245,158,11,0.12); color: var(--yellow); border: 1px solid rgba(245,158,11,0.25); }
+  .badge-err { background: rgba(239,68,68,0.12); color: var(--red); border: 1px solid rgba(239,68,68,0.25); }
+
+  /* Terminal */
+  .terminal {
+    background: #070910;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.8;
+    margin-bottom: 16px;
+    min-height: 120px;
+  }
+  .t-green { color: #4ade80; }
+  .t-blue { color: #60a5fa; }
+  .t-yellow { color: #fbbf24; }
+  .t-muted { color: #475569; }
+  .t-white { color: #e2e8f0; }
+  .t-purple { color: #c084fc; }
+  .cursor {
+    display: inline-block; width: 8px; height: 14px;
+    background: var(--accent2); vertical-align: middle;
+    animation: blink 1s step-end infinite;
+    border-radius: 1px;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* Build progress */
+  .build-stages { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+  .stage-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+  .stage-num {
+    width: 24px; height: 24px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; flex-shrink: 0;
+  }
+  .stage-name { font-size: 13px; font-weight: 600; flex: 1; }
+  .stage-time { font-size: 11px; color: var(--muted2); font-family: 'JetBrains Mono', monospace; }
+  .stage-bar-wrap { width: 100%; height: 3px; background: var(--border); border-radius: 2px; margin-top: 8px; }
+  .stage-bar { height: 100%; border-radius: 2px; transition: width 2s ease; }
+
+  /* Cert grid */
+  .cert-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .cert-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .cert-type { font-size: 11px; color: var(--muted2); font-family: 'JetBrains Mono', monospace; margin-bottom: 8px; }
+  .cert-name { font-size: 13px; font-weight: 700; margin-bottom: 12px; }
+  .cert-status { display: flex; align-items: center; gap: 8px; }
+  .cert-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .cert-status-text { font-size: 12px; font-family: 'JetBrains Mono', monospace; }
+
+  /* App meta */
+  .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .meta-field {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+  }
+  .meta-label { font-size: 10px; color: var(--muted); font-family: 'JetBrains Mono', monospace; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .meta-value { font-size: 13px; font-weight: 600; }
+
+  /* TestFlight */
+  .tf-card {
+    background: linear-gradient(135deg, rgba(168,85,247,0.08), rgba(59,130,246,0.08));
+    border: 1px solid rgba(168,85,247,0.2);
+    border-radius: 12px;
+    padding: 20px;
+    display: flex; align-items: center; gap: 16px;
+    margin-bottom: 16px;
+  }
+  .tf-icon { font-size: 36px; }
+  .tf-label { font-size: 11px; color: var(--muted2); font-family: 'JetBrains Mono', monospace; }
+  .tf-name { font-size: 16px; font-weight: 800; }
+  .tf-version { font-size: 12px; color: var(--muted2); font-family: 'JetBrains Mono', monospace; }
+  .tf-status { margin-left: auto; text-align: right; }
+  .tf-badge {
+    display: inline-block;
+    background: rgba(34,197,94,0.15);
+    border: 1px solid rgba(34,197,94,0.4);
+    color: var(--green);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 700;
+    padding: 5px 12px; border-radius: 20px;
+    margin-bottom: 6px;
+  }
+
+  /* Upload sim */
+  .upload-wrap { margin: 16px 0; }
+  .upload-label { display: flex; justify-content: space-between; font-size: 12px; font-family: 'JetBrains Mono', monospace; color: var(--muted2); margin-bottom: 6px; }
+  .upload-bar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .upload-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--accent), var(--apple)); transition: width 3s ease; }
+
+  /* Error panel */
+  .error-list { display: flex; flex-direction: column; gap: 10px; }
+  .error-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .error-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px;
+    cursor: pointer;
+  }
+  .error-icon { font-size: 15px; flex-shrink: 0; }
+  .error-title { font-size: 13px; font-weight: 600; flex: 1; }
+  .error-toggle { font-size: 18px; color: var(--muted); transition: transform 0.2s; }
+  .error-toggle.open { transform: rotate(90deg); color: var(--green); }
+  .error-body {
+    border-top: 1px solid var(--border);
+    padding: 12px 14px;
+    font-size: 12px; color: var(--muted2);
+    line-height: 1.7;
+    display: none;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .error-body.open { display: block; }
+  .fix-line { color: var(--green); }
+
+  /* Final */
+  .final-hero {
+    text-align: center;
+    padding: 32px 0 24px;
+  }
+  .final-circle {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    background: rgba(34,197,94,0.12);
+    border: 2px solid rgba(34,197,94,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px;
+    margin: 0 auto 20px;
+    animation: popIn 0.5s ease;
+  }
+  @keyframes popIn {
+    from { transform: scale(0.5); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  .final-title { font-size: 22px; font-weight: 800; color: var(--green); margin-bottom: 6px; }
+  .final-sub { font-size: 13px; color: var(--muted2); font-family: 'JetBrains Mono', monospace; }
+  .timeline-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    margin: 28px 0;
+    flex-wrap: wrap;
+  }
+  .tl-node {
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .tl-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--green);
+    margin: 0 auto 6px;
+  }
+  .tl-label { font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--muted2); }
+  .tl-time { font-size: 10px; color: var(--muted); }
+  .tl-line { width: 40px; height: 1px; background: var(--green); opacity: 0.4; margin: 0 4px; align-self: start; margin-top: 5px; }
+
+  /* Nav buttons */
+  .nav-row {
+    display: flex; justify-content: space-between;
+    margin-top: 24px; gap: 12px;
+  }
+  .btn {
+    padding: 10px 22px;
+    border-radius: 8px;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px; font-weight: 700;
+    cursor: pointer; border: none;
+    transition: all 0.2s;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .btn-ghost {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--muted2);
+  }
+  .btn-ghost:hover { color: var(--text); border-color: var(--muted); }
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+    box-shadow: 0 4px 16px rgba(59,130,246,0.3);
+  }
+  .btn-primary:hover { background: #2563eb; transform: translateY(-1px); }
+  .btn-primary:disabled { opacity: 0.4; cursor: default; transform: none; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  @media (max-width: 600px) {
+    .cert-grid, .meta-grid { grid-template-columns: 1fr; }
+    .tf-card { flex-direction: column; text-align: center; }
+    .tf-status { margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-icon">🚀</div>
+    <div>
+      <h1>EAS iOS Build & App Store Pipeline</h1>
+      <p>expo + eas-build + app-store-connect</p>
+    </div>
+    <div class="header-badge">
+      <div class="dot-live"></div>
+      LIVE SESSION
+    </div>
+  </div>
+
+  <!-- Progress nav -->
+  <div class="progress-nav" id="progressNav"></div>
+
+  <!-- Step 1: Project Audit -->
+  <div class="card active" id="step-0">
+    <div class="card-header">
+      <div class="card-icon" style="background:rgba(59,130,246,0.12);color:var(--accent)">🔍</div>
+      <div>
+        <div class="card-title">Step 1 — Project Audit</div>
+        <div class="card-sub">Reviewing Expo config, dependencies, iOS settings</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="checklist">
+        <div class="check-row"><div class="check-icon ok">✓</div><div class="check-info"><div class="check-label">Expo SDK Version</div><div class="check-detail">sdk: 51.0.0 — compatible with EAS Build</div></div><span class="badge badge-ok">OK</span></div>
+        <div class="check-row"><div class="check-icon ok">✓</div><div class="check-info"><div class="check-label">app.json / app.config.js</div><div class="check-detail">bundleIdentifier: com.morp.app — detected</div></div><span class="badge badge-ok">OK</span></div>
+        <div class="check-row"><div class="check-icon ok">✓</div><div class="check-info"><div class="check-label">iOS Icons & Splash</div><div class="check-detail">1024×1024 icon.png, splash 1242×2688 — present</div></div><span class="badge badge-ok">OK</span></div>
+        <div class="check-row"><div class="check-icon warn">⚠</div><div class="check-info"><div class="check-label">eas.json</div><div class="check-detail">No EAS config found — will generate in next step</div></div><span class="badge badge-warn">NEEDS SETUP</span></div>
+        <div class="check-row"><div class="check-icon ok">✓</div><div class="check-info"><div class="check-label">Native Modules</div><div class="check-detail">expo-notifications, expo-camera — compatible</div></div><span class="badge badge-ok">OK</span></div>
+        <div class="check-row"><div class="check-icon ok">✓</div><div class="check-info"><div class="check-label">Apple Developer Account</div><div class="check-detail">Team ID: XYZABC1234 — verified</div></div><span class="badge badge-ok">VERIFIED</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: EAS Setup -->
+  <div class="card" id="step-1">
+    <div class="card-header">
+      <div class="card-icon" style="background:rgba(168,85,247,0.12);color:var(--apple)">⚙️</div>
+      <div>
+        <div class="card-title">Step 2 — EAS Build Configuration</div>
+        <div class="card-sub">Installing EAS CLI, configuring build profiles</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="terminal" id="easTerminal">
+        <span class="t-muted">$ </span><span class="t-blue">npm install -g eas-cli</span><br>
+        <span class="t-green">✓ eas-cli@9.1.2 installed successfully</span><br><br>
+        <span class="t-muted">$ </span><span class="t-blue">eas login</span><br>
+        <span class="t-white">Email: </span><span class="t-purple">developer@morp.app</span><br>
+        <span class="t-green">✓ Logged in as developer@morp.app</span><br><br>
+        <span class="t-muted">$ </span><span class="t-blue">eas build:configure</span><br>
+        <span class="t-green">✓ eas.json created</span><br>
+        <span class="t-green">✓ Build profiles configured: preview, production</span><br>
+        <span class="t-yellow">→ iOS distribution: app-store</span><br>
+        <span class="t-yellow">→ autoIncrement: true</span><br>
+        <span class="cursor"></span>
+      </div>
+      <div class="checklist">
+        <div class="check-row"><div class="check-icon ok">✓</div><div class="check-info"><div class="check-label">eas.json Generated</div><div class="check-detail">profiles: preview, production / channel: production</div></div><span class="badge badge-ok">DONE</span></div>
+        <div class="check-row"><div class="check-icon ok">✓</div><div class="check-info"><div class="check-label">Auto Build Number</div><div class="check-detail">autoIncrement enabled — no manual versioning needed</div></div><span class="badge badge-ok">DONE</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3: Build Pipeline -->
+  <div class="card" id="step-2">
+    <div class="card-header">
+      <div class="card-icon" style="background:rgba(59,130,246,0.12);color:var(--accent)">🔨</div>
+      <div>
+        <div class="card-title">Step 3 — iOS Production Build</div>
+        <div class="card-sub">Running eas build -p ios --profile production</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="terminal">
+        <span class="t-muted">$ </span><span class="t-blue">eas build -p ios --profile production</span><br>
+        <span class="t-green">✓ Using remote EAS Build service</span><br>
+        <span class="t-yellow">→ Queued — Build #ios-prod-2024-001</span><br>
+        <span class="t-white">Build URL: </span><span class="t-blue">https://expo.dev/builds/ios-prod-2024-001</span>
+      </div>
+      <div class="build-stages" id="buildStages">
+        <div class="stage-row">
+          <div class="stage-num" style="background:rgba(34,197,94,0.12);color:var(--green)">1</div>
+          <div style="flex:1"><div class="stage-name">Installing dependencies</div><div class="stage-bar-wrap"><div class="stage-bar" style="width:100%;background:var(--green)"></div></div></div>
+          <span class="stage-time t-green">42s</span>
+        </div>
+        <div class="stage-row">
+          <div class="stage-num" style="background:rgba(34,197,94,0.12);color:var(--green)">2</div>
+          <div style="flex:1"><div class="stage-name">Generating native iOS project</div><div class="stage-bar-wrap"><div class="stage-bar" style="width:100%;background:var(--green)"></div></div></div>
+          <span class="stage-time t-green">1m 14s</span>
+        </div>
+        <div class="stage-row">
+          <div class="stage-num" style="background:rgba(34,197,94,0.12);color:var(--green)">3</div>
+          <div style="flex:1"><div class="stage-name">Applying provisioning profile</div><div class="stage-bar-wrap"><div class="stage-bar" style="width:100%;background:var(--green)"></div></div></div>
+          <span class="stage-time t-green">8s</span>
+        </div>
+        <div class="stage-row">
+          <div class="stage-num" style="background:rgba(59,130,246,0.15);color:var(--accent)">4</div>
+          <div style="flex:1"><div class="stage-name">Compiling Xcode archive (release)</div><div class="stage-bar-wrap"><div class="stage-bar" id="buildBar" style="width:0%;background:var(--accent)"></div></div></div>
+          <span class="stage-time" id="buildTime">running...</span>
+        </div>
+        <div class="stage-row" style="opacity:0.4" id="stage5">
+          <div class="stage-num" style="background:var(--surface);color:var(--muted)">5</div>
+          <div style="flex:1"><div class="stage-name">Signing .ipa artifact</div><div class="stage-bar-wrap"><div class="stage-bar" style="width:0%;background:var(--muted)"></div></div></div>
+          <span class="stage-time" style="color:var(--muted)">—</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 4: Certificates -->
+  <div class="card" id="step-3">
+    <div class="card-header">
+      <div class="card-icon" style="background:rgba(245,158,11,0.12);color:var(--yellow)">🔐</div>
+      <div>
+        <div class="card-title">Step 4 — Certificates & Provisioning</div>
+        <div class="card-sub">Apple Developer Portal — automated via EAS Credentials</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="terminal" style="margin-bottom:20px">
+        <span class="t-muted">$ </span><span class="t-blue">eas credentials -p ios</span><br>
+        <span class="t-green">✓ Apple ID authenticated</span><br>
+        <span class="t-green">✓ Team selected: MORP INC (XYZABC1234)</span><br>
+        <span class="t-yellow">→ Checking existing certificates...</span><br>
+        <span class="t-green">✓ Distribution certificate: Valid — expires Mar 2026</span><br>
+        <span class="t-green">✓ Push notification key: Valid</span><br>
+        <span class="t-green">✓ Provisioning profile: App Store — generated</span><br>
+        <span class="cursor"></span>
+      </div>
+      <div class="cert-grid">
+        <div class="cert-card">
+          <div class="cert-type">DISTRIBUTION CERT</div>
+          <div class="cert-name">iOS Distribution: MORP Inc</div>
+          <div class="cert-status"><div class="cert-dot" style="background:var(--green)"></div><span class="cert-status-text" style="color:var(--green)">Valid · Expires Mar 2026</span></div>
+        </div>
+        <div class="cert-card">
+          <div class="cert-type">PROVISIONING PROFILE</div>
+          <div class="cert-name">MORP App — App Store</div>
+          <div class="cert-status"><div class="cert-dot" style="background:var(--green)"></div><span class="cert-status-text" style="color:var(--green)">Active · com.morp.app</span></div>
+        </div>
+        <div class="cert-card">
+          <div class="cert-type">PUSH NOTIFICATION KEY</div>
+          <div class="cert-name">AuthKey_ABCDEF1234.p8</div>
+          <div class="cert-status"><div class="cert-dot" style="background:var(--green)"></div><span class="cert-status-text" style="color:var(--green)">Valid · Key ID: ABCDEF1234</span></div>
+        </div>
+        <div class="cert-card">
+          <div class="cert-type">BUNDLE IDENTIFIER</div>
+          <div class="cert-name">com.morp.app</div>
+          <div class="cert-status"><div class="cert-dot" style="background:var(--green)"></div><span class="cert-status-text" style="color:var(--green)">Registered · App Store</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 5: App Store Connect -->
+  <div class="card" id="step-4">
+    <div class="card-header">
+      <div class="card-icon" style="background:rgba(168,85,247,0.12);color:var(--apple)">🍎</div>
+      <div>
+        <div class="card-title">Step 5 — App Store Connect Setup</div>
+        <div class="card-sub">Configuring metadata, categories, and compliance</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="meta-grid">
+        <div class="meta-field"><div class="meta-label">App Name</div><div class="meta-value">MORP Mobile</div></div>
+        <div class="meta-field"><div class="meta-label">Bundle ID</div><div class="meta-value" style="font-family:monospace;font-size:12px">com.morp.app</div></div>
+        <div class="meta-field"><div class="meta-label">Primary Category</div><div class="meta-value">Business</div></div>
+        <div class="meta-field"><div class="meta-label">Content Rating</div><div class="meta-value">4+ (No objectionable content)</div></div>
+        <div class="meta-field"><div class="meta-label">Version</div><div class="meta-value">1.0.0 (Build 1)</div></div>
+        <div class="meta-field"><div class="meta-label">Privacy Policy URL</div><div class="meta-value" style="font-family:monospace;font-size:11px">morp.app/privacy</div></div>
+      </div>
+      <div class="checklist">
+        <div class="check-row"><div class="check-icon ok">✓</div><div class="check-info"><div class="check-label">Screenshots uploaded</div><div class="check-detail">6.7" + 6.1" iPhone sizes — all 3 required shots</div></div><span class="badge badge-ok">DONE</span></div>
+        <div class="check-row"><div class="check-icon ok">✓</div><div class="check-info"><div class="check-label">App Description & Keywords</div><div class="check-detail">100 chars keywords · 4000 char description</div></div><span class="badge badge-ok">DONE</span></div>
+        <div class="check-row"><div class="check-icon ok">✓</div><div class="check-info"><div class="check-label">Export Compliance</div><div class="check-detail">No proprietary encryption — HTTPS only</div></div><span class="badge badge-ok">DONE</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 6: TestFlight -->
+  <div class="card" id="step-5">
+    <div class="card-header">
+      <div class="card-icon" style="background:rgba(34,197,94,0.12);color:var(--green)">✈️</div>
+      <div>
+        <div class="card-title">Step 6 — TestFlight Submission</div>
+        <div class="card-sub">Uploading .ipa via eas submit + TestFlight processing</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="tf-card">
+        <div class="tf-icon">📱</div>
+        <div>
+          <div class="tf-label">APP</div>
+          <div class="tf-name">MORP Mobile</div>
+          <div class="tf-version">v1.0.0 · Build 1 · 42.3 MB</div>
+        </div>
+        <div class="tf-status">
+          <div class="tf-badge">✓ Ready for Testing</div>
+          <div style="font-size:11px;color:var(--muted2);font-family:monospace">Processed in 4m 22s</div>
+        </div>
+      </div>
+      <div class="upload-wrap">
+        <div class="upload-label"><span>Upload progress</span><span id="uploadPct">100%</span></div>
+        <div class="upload-bar"><div class="upload-fill" id="uploadFill" style="width:100%"></div></div>
+      </div>
+      <div class="checklist">
+        <div class="check-row"><div class="check-icon ok">✓</div><div class="check-info"><div class="check-label">Binary Uploaded to App Store Connect</div><div class="check-detail">eas submit -p ios --latest — completed</div></div><span class="badge badge-ok">DONE</span></div>
+        <div class="check-row"><div class="check-icon ok">✓</div><div class="check-info"><div class="check-label">Apple Processing Complete</div><div class="check-detail">No issues flagged — build available in TestFlight</div></div><span class="badge badge-ok">DONE</span></div>
+        <div class="check-row"><div class="check-icon ok">✓</div><div class="check-info"><div class="check-label">Internal Testers Notified</div><div class="check-detail">3 testers added · invite emails sent</div></div><span class="badge badge-ok">DONE</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 7: Error Handling -->
+  <div class="card" id="step-6">
+    <div class="card-header">
+      <div class="card-icon" style="background:rgba(239,68,68,0.12);color:var(--red)">🛡️</div>
+      <div>
+        <div class="card-title">Step 7 — Error Resolution</div>
+        <div class="card-sub">Common issues detected and resolved automatically</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="error-list">
+        <div class="error-item">
+          <div class="error-head" onclick="toggleErr(this)">
+            <span class="error-icon">⚠️</span>
+            <span class="error-title">Invalid Provisioning Profile — Bundle ID Mismatch</span>
+            <span class="badge badge-err" style="margin-right:8px">RESOLVED</span>
+            <span class="error-toggle">›</span>
+          </div>
+          <div class="error-body">
+            <span style="color:var(--red)">✗ Error: </span>No provisioning profile for "com.morp.mobile" was found<br>
+            <span class="t-muted">→ Detected: app.json had wrong bundleIdentifier</span><br><br>
+            <span class="fix-line">✓ Fix: Updated bundleIdentifier to com.morp.app</span><br>
+            <span class="fix-line">✓ Fix: Regenerated provisioning profile via EAS credentials</span><br>
+            <span class="fix-line">✓ Rebuild triggered — clean pass</span>
+          </div>
+        </div>
+        <div class="error-item">
+          <div class="error-head" onclick="toggleErr(this)">
+            <span class="error-icon">⚠️</span>
+            <span class="error-title">Missing 1024×1024 Icon — App Store Rejection</span>
+            <span class="badge badge-err" style="margin-right:8px">RESOLVED</span>
+            <span class="error-toggle">›</span>
+          </div>
+          <div class="error-body">
+            <span style="color:var(--red)">✗ Error: </span>Your binary is missing an app icon for the App Store<br>
+            <span class="t-muted">→ Uploaded icon had alpha channel (transparency)</span><br><br>
+            <span class="fix-line">✓ Fix: Flattened icon PNG — removed alpha channel</span><br>
+            <span class="fix-line">✓ Fix: Added correct icon path to app.json ios.icon field</span><br>
+            <span class="fix-line">✓ Resubmitted — passed validation</span>
+          </div>
+        </div>
+        <div class="error-item">
+          <div class="error-head" onclick="toggleErr(this)">
+            <span class="error-icon">⚠️</span>
+            <span class="error-title">Expired Distribution Certificate</span>
+            <span class="badge badge-warn" style="margin-right:8px">RESOLVED</span>
+            <span class="error-toggle">›</span>
+          </div>
+          <div class="error-body">
+            <span style="color:var(--yellow)">⚠ Warning: </span>Certificate expires in 7 days<br>
+            <span class="t-muted">→ Existing cert nearing expiry date</span><br><br>
+            <span class="fix-line">✓ Fix: Revoked old cert via Apple Developer Portal</span><br>
+            <span class="fix-line">✓ Fix: Generated new 1-year distribution certificate</span><br>
+            <span class="fix-line">✓ Fix: Updated EAS credentials — all builds now use new cert</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 8: Final Status -->
+  <div class="card" id="step-7">
+    <div class="card-header">
+      <div class="card-icon" style="background:rgba(34,197,94,0.12);color:var(--green)">🎉</div>
+      <div>
+        <div class="card-title">Step 8 — Submission Complete</div>
+        <div class="card-sub">App successfully submitted to App Store Connect</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="final-hero">
+        <div class="final-circle">✅</div>
+        <div class="final-title">App Successfully Submitted</div>
+        <div class="final-sub">MORP Mobile is live on TestFlight · Under App Store Review</div>
+      </div>
+      <div class="timeline-row">
+        <div class="tl-node"><div class="tl-dot"></div><div class="tl-label">Audit</div><div class="tl-time">5 min</div></div>
+        <div class="tl-line"></div>
+        <div class="tl-node"><div class="tl-dot"></div><div class="tl-label">EAS Setup</div><div class="tl-time">10 min</div></div>
+        <div class="tl-line"></div>
+        <div class="tl-node"><div class="tl-dot"></div><div class="tl-label">Build</div><div class="tl-time">18 min</div></div>
+        <div class="tl-line"></div>
+        <div class="tl-node"><div class="tl-dot"></div><div class="tl-label">Signing</div><div class="tl-time">3 min</div></div>
+        <div class="tl-line"></div>
+        <div class="tl-node"><div class="tl-dot"></div><div class="tl-label">Submit</div><div class="tl-time">8 min</div></div>
+        <div class="tl-line"></div>
+        <div class="tl-node"><div class="tl-dot"></div><div class="tl-label">TestFlight</div><div class="tl-time">✓ Live</div></div>
+      </div>
+      <div class="checklist">
+        <div class="check-row"><div class="check-icon ok">✓</div><div class="check-info"><div class="check-label">Production .ipa Generated & Signed</div><div class="check-detail">Build #ios-prod-2024-001 · 42.3 MB</div></div><span class="badge badge-ok">DONE</span></div>
+        <div class="check-row"><div class="check-icon ok">✓</div><div class="check-info"><div class="check-label">App Store Connect — Build Ready</div><div class="check-detail">All metadata, screenshots, compliance complete</div></div><span class="badge badge-ok">DONE</span></div>
+        <div class="check-row"><div class="check-icon ok">✓</div><div class="check-info"><div class="check-label">TestFlight Available for Testers</div><div class="check-detail">Internal testing enabled · External pending review</div></div><span class="badge badge-ok">DONE</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nav buttons -->
+  <div class="nav-row">
+    <button class="btn btn-ghost" id="btnBack" onclick="navigate(-1)" disabled>← Back</button>
+    <button class="btn btn-primary" id="btnNext" onclick="navigate(1)">Next Step →</button>
+  </div>
+
+</div>
+
+<script>
+const steps = [
+  { label: "Audit" },
+  { label: "EAS Setup" },
+  { label: "Build" },
+  { label: "Certs" },
+  { label: "App Store" },
+  { label: "TestFlight" },
+  { label: "Errors" },
+  { label: "Complete" }
+];
+
+let current = 0;
+
+function buildNav() {
+  const nav = document.getElementById('progressNav');
+  nav.innerHTML = '';
+  steps.forEach((s, i) => {
+    const item = document.createElement('div');
+    item.className = 'step-item';
+    item.innerHTML = `
+      <div class="step-circle ${i < current ? 'done' : i === current ? 'active' : ''}">${i < current ? '✓' : i + 1}</div>
+      <span class="step-label ${i < current ? 'done' : i === current ? 'active' : ''}">${s.label}</span>
+    `;
+    item.onclick = () => goTo(i);
+    nav.appendChild(item);
+    if (i < steps.length - 1) {
+      const line = document.createElement('div');
+      line.className = `step-connector ${i < current ? 'done' : ''}`;
+      nav.appendChild(line);
+    }
+  });
+}
+
+function goTo(i) {
+  document.getElementById(`step-${current}`).classList.remove('active');
+  current = i;
+  document.getElementById(`step-${current}`).classList.add('active');
+  buildNav();
+  updateButtons();
+  onStepEnter(current);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function navigate(dir) { goTo(current + dir); }
+
+function updateButtons() {
+  document.getElementById('btnBack').disabled = current === 0;
+  const btn = document.getElementById('btnNext');
+  if (current === steps.length - 1) {
+    btn.textContent = '↺ Restart';
+    btn.onclick = () => goTo(0);
+  } else {
+    btn.textContent = 'Next Step →';
+    btn.onclick = () => navigate(1);
+  }
+}
+
+function onStepEnter(step) {
+  if (step === 2) {
+    // Animate build bar
+    setTimeout(() => {
+      document.getElementById('buildBar').style.width = '78%';
+      let t = 0;
+      const iv = setInterval(() => {
+        t += 3;
+        if (t >= 100) {
+          clearInterval(iv);
+          document.getElementById('buildBar').style.width = '100%';
+          document.getElementById('buildBar').style.background = 'var(--green)';
+          document.getElementById('buildBar').style.transition = 'width 0.4s ease';
+          document.getElementById('buildTime').textContent = '3m 47s';
+          document.getElementById('buildTime').style.color = 'var(--green)';
+          document.getElementById('stage5').style.opacity = '1';
+          document.querySelector('#stage5 .stage-bar').style.width = '100%';
+          document.querySelector('#stage5 .stage-bar').style.background = 'var(--green)';
+          document.querySelector('#stage5 .stage-time').textContent = '12s';
+          document.querySelector('#stage5 .stage-time').style.color = 'var(--green)';
+        }
+      }, 80);
+    }, 300);
+  }
+}
+
+function toggleErr(head) {
+  const toggle = head.querySelector('.error-toggle');
+  const body = head.nextElementSibling;
+  toggle.classList.toggle('open');
+  body.classList.toggle('open');
+}
+
+buildNav();
+updateButtons();
+</script>
+</body>
+</html>
